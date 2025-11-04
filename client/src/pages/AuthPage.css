@@ -1,0 +1,77 @@
+@import 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
+
+.auth-wrapper {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+  overflow: hidden;
+  padding: 20px;
+}
+
+/* Floating gradient background animation */
+.floating-bg {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1), transparent 60%),
+              radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1), transparent 60%);
+  animation: moveBg 8s linear infinite alternate;
+  z-index: 0;
+}
+
+@keyframes moveBg {
+  from { transform: translate(0, 0); }
+  to { transform: translate(-10%, -10%); }
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 30px;
+  width: 100%;
+  max-width: 420px;
+  z-index: 1;
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+.auth-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.form-label {
+  font-weight: 500;
+  color: #444;
+}
+
+input.form-control {
+  border-radius: 12px;
+  padding: 10px;
+  border: 1.5px solid #ccc;
+  transition: 0.2s ease;
+}
+
+input.form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 8px rgba(0,123,255,0.3);
+}
+
+.btn-primary {
+  border-radius: 12px;
+  padding: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  transform: scale(1.03);
+}
+
+.text-primary {
+  color: #007bff !important;
+}

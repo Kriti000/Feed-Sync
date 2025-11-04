@@ -1,0 +1,61 @@
+.form-container {
+  max-width: 450px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: #f0f8ff;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+form input,
+form textarea {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.success {
+  color: green;
+  margin-top: 10px;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
+
+.nav {
+  display: flex;
+  gap: 20px;
+  padding: 10px;
+  background: #ddd;
+}
+
+.nav a {
+  text-decoration: none;
+  font-weight: bold;
+}
