@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import './FetchData.css';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const FeedbackDetails = () => {
   const { id } = useParams();
-  const [feedback, setFeedback] = useState({});
+  const [feedback, setFeedback] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,72 +16,131 @@ const FeedbackDetails = () => {
         const res = await axios.get(`http://localhost:5000/api/feedback/${id}`);
         setFeedback(res.data);
       } catch (err) {
-        console.error('Error fetching feedback detail:', err);
+        console.error("Error fetching feedback details:", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchFeedback();
   }, [id]);
 
-  return (
-    <div className="feedback-details-container" style={{ padding: '2rem', backgroundColor: '#f0f4fb' }}>
-      <h2 style={{ marginBottom: '1rem' }}>Feedback Details</h2>
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status"></div>
+        <p className="mt-3 text-muted">Loading feedback details...</p>
+      </div>
+    );
+  }
 
-      <div className="feedback-details-card" style={{
-        background: 'white',
-        padding: '2rem',
-        borderRadius: '10px',
-        maxWidth: '700px',
-        margin: 'auto',
-        boxShadow: '0 0 15px rgba(0, 0, 0, 0.1)'
-      }}>
-        <p><strong>Name:</strong> {feedback.name}</p>
-        <p><strong>Email:</strong> {feedback.email}</p>
-        <p><strong>Rating:</strong> {feedback.rating}</p>
-        <p><strong>Message:</strong> {feedback.message}</p>
-        <p><strong>IP Address:</strong> {feedback.ipAddress}</p>
+  if (!feedback) {
+    return (
+      <div className="container text-center py-5">
+        <i className="bi bi-exclamation-triangle text-warning fs-1"></i>
+        <h4 className="mt-3">Feedback not found</h4>
+        <button
+          className="btn btn-outline-primary mt-3"
+          onClick={() => navigate("/feedbackdata")}
+        >
+          ← Back to Feedback List
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="container py-5"
+      style={{
+        background: "linear-gradient(135deg, #e3f2fd, #ffffff)",
+        borderRadius: "12px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+      }}
+    >
+      <div className="card border-0 shadow-sm p-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h2 className="text-primary fw-bold mb-0">
+            <i className="bi bi-chat-left-text me-2"></i>Feedback Details
+          </h2>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => navigate("/feedbackdata")}
+          >
+            ← Back
+          </button>
+        </div>
+
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <p>
+              <strong className="text-dark">Name:</strong>{" "}
+              <span className="text-muted">{feedback.name}</span>
+            </p>
+            <p>
+              <strong className="text-dark">Email:</strong>{" "}
+              <span className="text-muted">{feedback.email}</span>
+            </p>
+            <p>
+              <strong className="text-dark">Rating:</strong>{" "}
+              <span className="badge bg-warning text-dark">
+                {feedback.rating || "N/A"} <i className="bi bi-star-fill"></i>
+              </span>
+            </p>
+          </div>
+
+          <div className="col-md-6">
+            <p>
+              <strong className="text-dark">Message:</strong>
+              <br />
+              <span className="text-muted">{feedback.message}</span>
+            </p>
+            <p>
+              <strong className="text-dark">Submitted On:</strong>{" "}
+              <span className="text-muted">
+                {new Date(feedback.createdAt).toLocaleString()}
+              </span>
+            </p>
+          </div>
+        </div>
 
         {feedback.image && (
-          <div style={{ marginTop: '1rem' }}>
+          <div className="mt-4 text-center">
+            <h5 className="fw-semibold mb-3 text-primary">Uploaded Image</h5>
             <img
-              src={`http://localhost:5000/${feedback.image}`}
+              src={`http://localhost:5000/images/${feedback.image}`}
               alt="Feedback"
-              style={{
-                maxWidth: '100%',
-                height: 'auto',
-                border: '1px solid #ccc',
-                borderRadius: '8px',
-                marginTop: '1rem',
-                boxShadow: '0 0 10px rgba(0,0,0,0.1)'
+              className="img-fluid rounded shadow-sm border"
+              style={{ maxWidth: "400px", height: "auto" }}
+              onError={(e) => {
+                e.target.src =
+                  "https://via.placeholder.com/400x250?text=Image+Not+Found";
               }}
             />
           </div>
         )}
 
         {feedback.steps && feedback.steps.length > 0 && (
-          <div style={{ marginTop: '2rem' }}>
-            <h4>Step-wise Comments</h4>
+          <div className="mt-5">
+            <h4 className="text-secondary fw-bold mb-3">
+              <i className="bi bi-list-check me-2"></i>Step-wise Comments
+            </h4>
             {feedback.steps.map((step, index) => (
               <div
                 key={index}
-                style={{
-                  backgroundColor: '#f9f9f9',
-                  padding: '1rem',
-                  borderRadius: '8px',
-                  marginBottom: '1rem',
-                  boxShadow: '0 0 5px rgba(0, 0, 0, 0.05)'
-                }}
+                className="p-3 mb-3 bg-light rounded shadow-sm border"
               >
-                <p><strong>Step {index + 1}:</strong> {step.comment}</p>
+                <p className="mb-1">
+                  <strong>Step {index + 1}:</strong> {step.comment || "N/A"}
+                </p>
                 {step.image && (
                   <img
-                    src={`http://localhost:5000/${step.image}`}
+                    src={`http://localhost:5000/images/${step.image}`}
                     alt={`Step ${index + 1}`}
+                    className="rounded mt-2 shadow-sm border"
                     style={{
-                      maxWidth: '100%',
-                      height: 'auto',
-                      marginTop: '0.5rem',
-                      border: '1px solid #ccc',
-                      borderRadius: '5px'
+                      maxWidth: "300px",
+                      height: "auto",
+                      display: "block",
                     }}
                   />
                 )}
@@ -87,22 +148,6 @@ const FeedbackDetails = () => {
             ))}
           </div>
         )}
-
-        <button
-          className="back-button"
-          onClick={() => navigate('/feedbackdata')}
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}
-        >
-          ← Back to Feedback List
-        </button>
       </div>
     </div>
   );

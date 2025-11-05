@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import FeedbackForm from "../components/FeedbackForm";
 import Swal from "sweetalert2";
 import "./FetchData.css";
 import { useNavigate } from "react-router-dom";
@@ -10,19 +9,24 @@ const FeedbackData = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchText, setSearchText] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [editUser, setEditUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/feedback");
+      setLoading(true);
+      const res = await axios.get("http://localhost:5000/api/feedback", {
+        withCredentials: true
+      });
       setUsers(res.data);
       setFilteredUsers(res.data);
     } catch (err) {
       console.error("Error fetching feedback:", err);
+      Swal.fire('Error', 'Failed to fetch feedback data', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,27 +47,26 @@ const FeedbackData = () => {
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
       title: "Are you sure?",
-      text: "This feedback will be soft deleted.",
+      text: "This feedback will be deleted permanently!",
       icon: "warning",
       showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
       confirmButtonText: "Yes, delete it!",
     });
 
     if (confirm.isConfirmed) {
       try {
-        await axios.put(`http://localhost:5000/api/feedback/soft-delete/${id}`);
+        await axios.delete(`http://localhost:5000/api/feedback/${id}`, {
+          withCredentials: true
+        });
         fetchData();
-        Swal.fire("Deleted!", "Feedback has been soft deleted.", "success");
+        Swal.fire("Deleted!", "Feedback has been deleted.", "success");
       } catch (err) {
         console.error("Delete failed:", err);
         Swal.fire("Error", "Failed to delete feedback", "error");
       }
     }
-  };
-
-  const handleEdit = (user) => {
-    setEditUser(user);
-    setShowForm(true);
   };
 
   const handleView = (user) => {
@@ -103,7 +106,6 @@ const FeedbackData = () => {
         ["Email", f.email],
         ["Rating", String(f.rating)],
         ["Message", f.message],
-        ["IP Address", f.ipAddress || "N/A"],
       ];
 
       doc.setFontSize(12).setFont("helvetica", "normal");
@@ -161,7 +163,8 @@ const FeedbackData = () => {
       }
     }
 
-    doc.save("Styled_Feedback_Report.pdf");
+    doc.save("FeedSync_Feedback_Report.pdf");
+    Swal.fire('Success!', 'PDF exported successfully', 'success');
   };
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -169,87 +172,169 @@ const FeedbackData = () => {
   const currentItems = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
+  if (loading) {
+    return (
+      <div className="container text-center py-5">
+        <div className="spinner-border text-primary" style={{width: '3rem', height: '3rem'}} role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3">Loading feedback data...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="first-div">
-      {!showForm ? (
-        <div className="second-div">
-          <div className="header-bar">
-            <h2>Feedback Data</h2>
+    <div className="container">
+      <div className="card shadow-sm border-0">
+        <div className="card-header bg-white py-3">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-              <button className="add-button" onClick={() => {
-                setEditUser(null);
-                setShowForm(true);
-              }}>
-                + Add New
+              <h3 className="mb-0">
+                <i className="bi bi-table me-2 text-primary"></i>
+                Feedback Data
+              </h3>
+              <small className="text-muted">Total Records: {filteredUsers.length}</small>
+            </div>
+            <div className="d-flex gap-2">
+              <button 
+                className="btn btn-success"
+                onClick={() => navigate('/feedback')}
+              >
+                <i className="bi bi-plus-circle me-2"></i>
+                Add New Feedback
               </button>
-              <button className="export-button" onClick={handleExportPDF}>
-                Export Styled PDF
+              <button 
+                className="btn btn-primary"
+                onClick={handleExportPDF}
+                disabled={filteredUsers.length === 0}
+              >
+                <i className="bi bi-file-earmark-pdf me-2"></i>
+                Export PDF
               </button>
             </div>
           </div>
-
-          <div className="search-bar">
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search by any keyword..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-            />
-          </div>
-
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Rating</th>
-                <th>Message</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.map((user) => (
-                <tr key={user._id}>
-                  <td>{user.name}</td>
-                  <td>{user.email}</td>
-                  <td>{user.rating}</td>
-                  <td>{user.message}</td>
-                  <td>
-                    <button className="action-btn view-btn" onClick={() => handleView(user)}>
-                      View
-                    </button>
-                    <button className="action-btn edit-btn" onClick={() => handleEdit(user)}>
-                      Edit
-                    </button>
-                    <button className="action-btn delete-btn" onClick={() => handleDelete(user._id)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="pagination">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-              <button
-                key={number}
-                className={`page-btn ${number === currentPage ? "active" : ""}`}
-                onClick={() => setCurrentPage(number)}
-              >
-                {number}
-              </button>
-            ))}
-          </div>
         </div>
-      ) : (
-        <FeedbackForm
-          editUser={editUser}
-          setShowForm={setShowForm}
-          fetchData={fetchData}
-        />
-      )}
+
+        <div className="card-body p-0">
+          {/* Search Bar */}
+          <div className="p-3 border-bottom">
+            <div className="input-group">
+              <span className="input-group-text bg-white">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search by name, email, rating, or message..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+              />
+              {searchText && (
+                <button 
+                  className="btn btn-outline-secondary"
+                  onClick={() => setSearchText('')}
+                >
+                  <i className="bi bi-x"></i>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="table-responsive">
+            <table className="table table-hover mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Rating</th>
+                  <th>Message</th>
+                  <th className="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.length > 0 ? (
+                  currentItems.map((user, index) => (
+                    <tr key={user._id}>
+                      <td>{indexOfFirstItem + index + 1}</td>
+                      <td className="fw-semibold">{user.name}</td>
+                      <td>{user.email}</td>
+                      <td>
+                        <span className="badge bg-warning text-dark">
+                          {user.rating} <i className="bi bi-star-fill"></i>
+                        </span>
+                      </td>
+                      <td className="text-truncate" style={{maxWidth: '250px'}}>
+                        {user.message}
+                      </td>
+                      <td className="text-center">
+                        <button 
+                          className="btn btn-sm btn-info text-white me-1"
+                          onClick={() => handleView(user)}
+                          title="View Details"
+                        >
+                          <i className="bi bi-eye-fill"></i>
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(user._id)}
+                          title="Delete"
+                        >
+                          <i className="bi bi-trash-fill"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center py-5 text-muted">
+                      <i className="bi bi-inbox fs-1 d-block mb-2"></i>
+                      No feedback found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="p-3 border-top">
+              <nav>
+                <ul className="pagination pagination-sm mb-0 justify-content-center">
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button 
+                      className="page-link"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      Previous
+                    </button>
+                  </li>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                    <li key={number} className={`page-item ${number === currentPage ? 'active' : ''}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => setCurrentPage(number)}
+                      >
+                        {number}
+                      </button>
+                    </li>
+                  ))}
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button 
+                      className="page-link"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      Next
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

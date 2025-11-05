@@ -1,77 +1,109 @@
 import express from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
+import User from '../models/userModel.js';  
 
 const router = express.Router();
 
 router.post('/signup', async (req, res) => {
-  const { name, email, password } = req.body;
-
   try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'Email already exists' });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists with this email' });
+    }
 
-    const newUser = new User({ name, email, password });
-    await newUser.save();
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (err) {
-    res.status(500).json({ message: 'Signup failed', error: err.message });
-  }
-});
-
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid email' });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid password' });
-
-    const token = jwt.sign({ userId: user._id }, 'jwtSecretKey');
-
-    req.session.user = { id: user._id, email: user.email };
-
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'Lax',
-      maxAge: 24 * 60 * 60 * 1000,
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword
     });
 
-    res.status(200).json({ message: 'Login successful' });
+    await newUser.save();
+    res.status(201).json({ 
+      success: true, 
+      message: 'User registered successfully!' 
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Login failed', error: err.message });
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Server error during signup' });
   }
 });
 
-router.get('/check', (req, res) => {
-  if (req.session.user) {
-    res.status(200).json({ loggedIn: true, user: req.session.user });
-  } else {
-    res.status(401).json({ loggedIn: false });
+// Login Route
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Set session
+    req.session.userId = user._id;
+    req.session.userEmail = user.email;
+    req.session.userName = user.name;
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Server error during login' });
   }
 });
 
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
-      return res.status(500).json({ message: 'Logout failed' });
+      return res.status(500).json({ error: 'Failed to logout' });
     }
-
-    res.clearCookie('token', {
-      httpOnly: true,
-      sameSite: 'Lax',
-      secure: false,
+    res.clearCookie('connect.sid');
+    res.status(200).json({ 
+      success: true, 
+      message: 'Logged out successfully' 
     });
-
-    res.clearCookie('connect.sid'); 
-
-    res.status(200).json({ message: 'Logged out successfully' });
   });
+});
+
+router.get('/check', (req, res) => {
+  if (req.session && req.session.userId) {
+    res.json({
+      authenticated: true,
+      user: {
+        id: req.session.userId,
+        email: req.session.userEmail,
+        name: req.session.userName
+      }
+    });
+  } else {
+    res.json({ authenticated: false });
+  }
 });
 
 export default router;

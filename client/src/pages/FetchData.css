@@ -227,3 +227,29 @@ h2 {
 .back-button:hover {
   background-color: #0056b3;
 }
+
+.table td .action-btn {
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 12px;
+  min-width: 70px;
+}
+
+.table td .action-btn.view-btn {
+  background-color: #007bff;
+  color: white;
+}
+.table td .action-btn.edit-btn {
+  background-color: #ffc107;
+  color: black;
+}
+.table td .action-btn.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.table td .action-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+  transition: all 0.2s ease-in-out;
+}
