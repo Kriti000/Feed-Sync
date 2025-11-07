@@ -14,7 +14,7 @@ const About = () => {
       <div className="row align-items-center">
         <div className="col-md-6 mb-4">
           <img
-            src="/images/about-banner.jpg"
+            src={`${process.env.PUBLIC_URL}/about.png`}
             alt="About FeedSync"
             className="img-fluid rounded shadow"
           />

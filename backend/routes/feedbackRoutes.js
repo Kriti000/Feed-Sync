@@ -3,18 +3,23 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import Feedback from '../models/feedbackModel.js';
 
 const router = express.Router();
 
-// Ensure images directory exists
-const imagesDir = path.join(process.cwd(), 'backend', 'images');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ✅ Always point to backend/images (no nested backend/backend)
+const imagesDir = path.join(__dirname, '../images');
 fs.mkdirSync(imagesDir, { recursive: true });
 
-// Configure multer
+// ✅ Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, imagesDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_')),
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_')),
 });
 const upload = multer({ storage });
 
@@ -36,9 +41,11 @@ router.post('/', upload.single('image'), async (req, res) => {
     });
 
     await newFeedback.save();
-    res.status(201).json({ message: 'Feedback submitted successfully!', feedback: newFeedback });
+    res
+      .status(201)
+      .json({ message: 'Feedback submitted successfully!', feedback: newFeedback });
   } catch (error) {
-    console.error('Error saving feedback:', error);
+    console.error('❌ Error saving feedback:', error);
     res.status(500).json({ error: 'Failed to submit feedback' });
   }
 });
@@ -49,7 +56,7 @@ router.get('/', async (req, res) => {
     const feedbacks = await Feedback.find().sort({ createdAt: -1 });
     res.json(feedbacks);
   } catch (err) {
-    console.error(err);
+    console.error('❌ Error fetching feedbacks:', err);
     res.status(500).json({ error: 'Failed to fetch feedbacks' });
   }
 });
@@ -61,7 +68,7 @@ router.get('/:id', async (req, res) => {
     if (!fb) return res.status(404).json({ error: 'Feedback not found' });
     res.json(fb);
   } catch (err) {
-    console.error(err);
+    console.error('❌ Error fetching feedback:', err);
     res.status(500).json({ error: 'Failed to fetch feedback' });
   }
 });
